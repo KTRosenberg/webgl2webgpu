@@ -1,5 +1,5 @@
 <html><body>
-<canvas id="pg_canvas" width="300" height="300" style="border:1px solid red;"></canvas>
+<canvas id="pg_canvas" width="1280" height="720" style="border:1px solid red;"></canvas>
 <script>
 	window.addEventListener( "load", _=>init() );
 
@@ -11,8 +11,16 @@
 		await Api.init();
 
 		ubo		= new Ubo();
+        ubo.data[0] = 0;
+        ubo.data[1] = Api.canvas.height / Api.canvas.width;
+        ubo.updateAll();
+
 		shader	= Shader.mk( SRC_VERT, SRC_FRAG, ubo );
-		mesh	= Mesh.mk( new Float32Array([0.0, 0.5, -0.5, -0.5, 0.5, -0.5]) );
+		mesh	= Mesh.mk( new Float32Array([
+             0.0,  0.5,   1.0, 0.0, 0.0, 1.0,
+            -0.5, -0.5,   0.0, 1.0, 0.0, 1.0,
+             0.5, -0.5,   0.0, 0.0, 1.0, 1.0
+        ]) );
 
 		// ubo.update( 10 * Math.PI / 180 );
   		render();
@@ -79,7 +87,7 @@
 
 			// Depth buffer is just a texture.
 			this.depth_buffer = this.device.createTexture({
-				size: { width: 300, height: 300, depth: 1 },
+				size: { width: this.canvas.width, height: this.canvas.height, depth: 1 },
 				format: Api.depth_format,
 				usage: GPUTextureUsage.OUTPUT_ATTACHMENT
 			});
@@ -140,11 +148,11 @@
 	Api.cmd_encoder	= null;
 	Api.pass_encoder = null;
 
-	Api.bg_color	= { r:1.0, g:1.0, b:1.0, a:1.0 };	// Default color to set new frame.
+	Api.bg_color	= { r:0.0, g:0.0, b:0.0, a:1.0 };	// Default color to set new frame.
 
 	// https://gpuweb.github.io/gpuweb/#enumdef-gputextureformat
 	// Like telling how we want the data layed out in the swap-chain texture (frame buffer)
-	Api.tex_format = "rgba8unorm"; //RGBA 32bit unsigned normalized value
+	Api.tex_format = "bgra8unorm"; //RGBA 32bit unsigned normalized value
 	Api.depth_format = "depth24plus-stencil8";
 
 	Api.depth_buffer = null;
@@ -173,12 +181,12 @@
 	// Uniform Buffer Object
 	class Ubo{
 		constructor(){
-			// uniform{ float angle }
-			this.data	= new Float32Array( [0] );
+			// uniform{ float angle, float aspect }
+			this.data	= new Float32Array(2);
 
 			// https://gpuweb.github.io/gpuweb/#dictdef-gpubufferdescriptor
 			this.buf	= Api.device.createBuffer({
-				size 	: 4,
+				size 	: 8,
 				usage 	: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
 			});
 
@@ -203,11 +211,16 @@
 				]
 			});
 		}
-
+        firstUpload() {
+            this.buf.setSubData(0, this.data);
+        }
 		update( v ){
 			this.data[ 0 ] = v;
-			this.buf.setSubData( 0, this.data );
+			this.buf.setSubData( 0, this.data, 0, 8);
 		}
+        updateAll() {
+            this.buf.setSubData( 0, this.data );
+        }
 	}
 
 	//##########################################################
@@ -228,7 +241,7 @@
 	class Shader{
 		constructor(){
 			this.pipe_line			= null;	// Like our Shader Linked Program
-			//this.bind_grp_layout	= null;
+			this.bind_grp_layout	= null;
 		}
 
 		static mk( vert_src, frag_src, ubo ){
@@ -284,8 +297,12 @@
       			// Setting up Vertex Attributes
 				vertexState : {
 					vertexBuffers : [
-						{	arrayStride	: 8, // Vertex data Length in Bytes, 2 floats * 4 Bytes
-							attributes	: [ { shaderLocation : 0, offset : 0, format : "float2" } ]
+						{	
+                            arrayStride	: 24, // Vertex data Length in Bytes, 6 floats * 4 Bytes
+							attributes	: [ 
+                                { shaderLocation : 0, offset : 0, format : "float2" },
+                                { shaderLocation : 1, offset : 8, format : "float4" } 
+                            ]
 						}
 					]
 				}
@@ -328,11 +345,15 @@
 	// Descriptor Sets For Layout
 	// https://vulkan.lunarg.com/doc/view/1.0.33.0/linux/vkspec.chunked/ch13s02.html
 
-	const SRC_VERT = `#version 450
+	const SRC_VERT = `#version 460
 		layout(location = 0) in vec2 position;
+        layout(location = 1) in vec4 color;
+
+        layout(location = 0) out vec4 v_color;
 
 		layout(set = 0, binding = 0) uniform Uniforms {
 			float angle;
+            float aspect;
 		} uniforms;
 
 		vec2 vec2_rot( vec2 v, float a ){
@@ -343,11 +364,18 @@
 
 		void main(){
   			gl_Position = vec4( vec2_rot( position, uniforms.angle ), 0.0, 1.0 );
+            gl_Position.x *= uniforms.aspect;
+
+            v_color = color;
 		}`;
 
-	const SRC_FRAG = `#version 450
+	const SRC_FRAG = `#version 460
 		layout(location = 0) out vec4 outColor;
-		void main() { outColor = vec4(1.0, 0.0, 0.0, 1.0); }`;
+        layout(location = 0) in vec4 v_color;
+
+		void main() { 
+            outColor = v_color; 
+        }`;
 
 </script>
 
