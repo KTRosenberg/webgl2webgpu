@@ -1,0 +1,16 @@
+{
+  "name": "webgpu-server",
+  "version": "0.1.0",
+  "description": "WebGPU tests",
+  "scripts": {
+    "start": "run-os",
+    "start:win32": "start \"\" http://localhost:8000/ && node server.js"
+  },
+  "dependencies": {
+    "argparse": "^1.0.10",
+    "express": "4.16.4"
+  },
+  "devDependencies": {
+    "run-script-os": "1.0.5"
+  }
+}
