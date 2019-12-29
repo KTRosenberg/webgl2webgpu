@@ -47,6 +47,9 @@ function compile(compiler, msg) {
 }
 
 self.onmessage = (e) => {
+    //console.group("XR support:");
+    //console.log(navigator.xr);
+    //console.groupEnd();
     // This actually works, but am not sure if this can be shared between
     // threads -- probably not, but you can transfer ownership of GPUBuffers and other
     // objects
@@ -54,9 +57,9 @@ self.onmessage = (e) => {
     //     console.log(adapter);
     // });
 
-    console.log(e);
+    //console.log(e);
     const msg = e.data;
-    console.log("from main:", msg);
+    //console.log("from main:", msg);
 
     switch (msg.type) {
     // TODO: would probably have an "init command"

@@ -5,7 +5,7 @@
 	import * as wkcmd from "./worker_command.js";
 
 // TODO: separate files for different features
-const MSAA = false;
+const MSAA = true;
 if (!MSAA) {
 	window.addEventListener( "load", _=>init() );
 
@@ -261,11 +261,11 @@ if (!MSAA) {
 
                 window.worker = new Worker("./worker.js", { type: "module" });
                 window.worker.onchange = (e) => {
-                    console.log("worker change:", e);
+                    //console.log("worker change:", e);
                 };
                 window.worker.onmessage = (e) => {
                     const msg = e.data;
-                    console.log("msg from worker:", msg);
+                    //console.log("msg from worker:", msg);
                     
 
                 	switch (msg.type) {
@@ -424,6 +424,7 @@ if (!MSAA) {
 
 
 } else {
+	console.log("using MSAA");
 	// MSAA version based on https://austineng.github.io/webgpu-samples/#helloTriangleMSAA
 	window.addEventListener( "load", _=>init() );
 
@@ -680,11 +681,11 @@ if (!MSAA) {
 			    // in other words, don't just make the worker global
                 window.worker = new Worker("./worker.js", { type: "module" });
                 window.worker.onchange = (e) => {
-                    console.log("worker change:", e);
+                    //console.log("worker change:", e);
                 };
                 window.worker.onmessage = (e) => {
                     const msg = e.data;
-                    console.log("msg from worker:", msg);
+                    //console.log("msg from worker:", msg);
                     
                 	switch (msg.type) {
                 	case "compileResult": {
